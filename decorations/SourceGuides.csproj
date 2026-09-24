@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AssemblyName>SourceGuides</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="GuideData.cs" />
+    <Compile Include="CueBindings.cs" />
+    <Compile Include="Plugin.cs" />
+    <Reference Include="$(GameRoot)/BepInEx/core/*.dll" Exclude="$(GameRoot)/BepInEx/core/dobby.dll"><Private>false</Private></Reference>
+    <Reference Include="$(GameRoot)/BepInEx/interop/*.dll"><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>

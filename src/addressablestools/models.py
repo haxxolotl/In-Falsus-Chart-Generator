@@ -1,0 +1,201 @@
+from __future__ import annotations
+
+import builtins
+from collections.abc import Iterator
+from dataclasses import dataclass, field
+from enum import Enum
+import struct
+from typing import TypeAlias, TypeVar
+
+
+@dataclass(frozen=True, slots=True)
+class SerializedType:
+    assembly_name: str | None
+    class_name: str | None
+
+    @property
+    def assembly_short_name(self) -> str:
+        return self.assembly_short_name_for_version(1)
+
+    def assembly_short_name_for_version(self, version: int) -> str:
+        if self.assembly_name is None:
+            raise ValueError("assembly_name is required")
+        if version <= 2:
+            return self.assembly_name.split(",", 1)[0]
+        return self.assembly_name
+
+    @property
+    def match_name(self) -> str:
+        return self.match_name_for_version(1)
+
+    def match_name_for_version(self, version: int) -> str:
+        if self.class_name is None:
+            raise ValueError("class_name is required")
+        if version >= 3 and self.assembly_name is None:
+            return self.class_name
+        return f"{self.assembly_short_name_for_version(version)}; {self.class_name}"
+
+
+@dataclass(frozen=True, slots=True)
+class TypeReference:
+    clsid: str
+
+
+@dataclass(frozen=True, slots=True)
+class Hash128:
+    value: str
+
+    @classmethod
+    def from_uint32s(cls, first: int, second: int, third: int, fourth: int) -> Hash128:
+        return cls(struct.pack("<IIII", first, second, third, fourth).hex())
+
+
+@dataclass(frozen=True, slots=True)
+class ClassJsonObject:
+    type: SerializedType
+    json_text: str
+
+
+@dataclass(frozen=True, slots=True)
+class ObjectInitializationData:
+    id: str | None
+    object_type: SerializedType
+    data: str | None
+
+
+class AssetLoadMode(Enum):
+    REQUESTED_ASSET_AND_DEPENDENCIES = 0
+    ALL_PACKED_ASSETS_AND_DEPENDENCIES = 1
+
+
+@dataclass(slots=True)
+class CommonInfo:
+    timeout: int = 0
+    redirect_limit: int = 0
+    retry_count: int = 0
+    asset_load_mode: AssetLoadMode = AssetLoadMode.ALL_PACKED_ASSETS_AND_DEPENDENCIES
+    chunked_transfer: bool = False
+    use_crc_for_cached_bundle: bool = False
+    use_unity_web_request_for_local_bundles: bool = False
+    clear_other_cached_versions_when_loaded: bool = False
+    version: int = 0
+
+
+@dataclass(slots=True)
+class AssetBundleRequestOptions:
+    hash: str = ""
+    crc: int = 0
+    common_info: CommonInfo | None = None
+    bundle_name: str | None = None
+    bundle_size: int = 0
+
+
+SerializedObject: TypeAlias = (
+    ClassJsonObject | TypeReference | Hash128 | AssetBundleRequestOptions | int | str | bool | None
+)
+
+
+T = TypeVar("T")
+
+
+@dataclass(slots=True)
+class ResourceLocation:
+    internal_id: str | None = None
+    provider_id: str | None = None
+    dependency_key: object = None
+    dependencies: list[ResourceLocation] | None = None
+    data: object = None
+    hash_code: int = 0
+    dependency_hash_code: int = 0
+    primary_key: str | None = None
+    type: SerializedType | None = None
+    _data_type: SerializedType | None = field(
+        default=None,
+        init=False,
+        repr=False,
+        compare=False,
+    )
+
+    # Convenience extensions. These methods are not serialized catalog fields.
+    def data_is(self, expected_type: builtins.type[object]) -> bool:
+        """Return whether the decoded provider data has ``expected_type``.
+
+        Args:
+            expected_type: Python type expected for :attr:`data`.
+        """
+
+        return isinstance(self.data, expected_type)
+
+    def data_as(self, expected_type: builtins.type[T]) -> T:
+        """Return decoded provider data after a checked type conversion.
+
+        Args:
+            expected_type: Python type expected for :attr:`data`.
+
+        Raises:
+            TypeError: If the decoded data does not have ``expected_type``.
+        """
+
+        if not isinstance(self.data, expected_type):
+            actual_type = builtins.type(self.data).__name__
+            raise TypeError(
+                f"resource {self.primary_key!r} expected {expected_type.__name__} data, "
+                f"got {actual_type}"
+            )
+        return self.data
+
+
+@dataclass(slots=True)
+class ContentCatalogData:
+    version: int = 0
+    locator_id: str | None = None
+    build_result_hash: str | None = None
+    instance_provider_data: ObjectInitializationData | None = None
+    scene_provider_data: ObjectInitializationData | None = None
+    resource_provider_data: list[ObjectInitializationData] = field(default_factory=list)
+    provider_ids: list[str] = field(default_factory=list)
+    internal_ids: list[str] = field(default_factory=list)
+    keys: list[str] | None = None
+    resource_types: list[SerializedType] = field(default_factory=list)
+    internal_id_prefixes: list[str] = field(default_factory=list)
+    resources: dict[object, list[ResourceLocation]] = field(default_factory=dict)
+
+    # Convenience extensions. These methods are not serialized catalog fields.
+    def locate(self, key: object) -> tuple[ResourceLocation, ...]:
+        """Return resource locations registered for ``key``.
+
+        An empty tuple is returned when the key is not present. The tuple prevents
+        accidental mutation of the catalog's internal location lists.
+        """
+
+        return tuple(self.resources.get(key, ()))
+
+    def iter_locations(self) -> Iterator[ResourceLocation]:
+        """Iterate over each distinct resource location once.
+
+        A location may be registered under multiple catalog keys. Deduplication is
+        based on object identity so mutable model values are handled safely.
+        """
+
+        seen: set[int] = set()
+        for locations in self.resources.values():
+            for location in locations:
+                identity = id(location)
+                if identity not in seen:
+                    seen.add(identity)
+                    yield location
+
+
+__all__ = [
+    "AssetBundleRequestOptions",
+    "AssetLoadMode",
+    "ClassJsonObject",
+    "CommonInfo",
+    "ContentCatalogData",
+    "Hash128",
+    "ObjectInitializationData",
+    "ResourceLocation",
+    "SerializedObject",
+    "SerializedType",
+    "TypeReference",
+]
