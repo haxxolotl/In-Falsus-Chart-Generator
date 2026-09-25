@@ -73,6 +73,10 @@ The Windows builder downloads the checksum-verified official CPython 3.12 runtim
 
 ## Project layout
 
+- Start with `src/infalsus_studio/gui.py` or `cli.py`; both call `pipeline.py`,
+  which delegates chart work to `engine/` and checked installation to
+  `installer.py`. The version suffixes inside `engine/` identify adopted chart
+  policies, not separate apps to run.
 - `src/infalsus_studio`: app, media preparation, calibration, discovery, generation, transactional installation.
 - `src/infalsus_studio/engine`: adopted charting, alignment, geometry and native-codec algorithms. Revision suffixes preserve their provenance; historical bulk-pack entry points are not used.
 - `decorations`: SourceGuides source. Build using `dotnet build decorations/SourceGuides.csproj -c Release -p:GameRoot="..."` against your own loader/interop installation. Game and loader DLLs are not included in the source project.
@@ -86,4 +90,4 @@ This is an unofficial local tool, not affiliated with the game developers. Distr
 
 ## Verification limits
 
-See `RESULT.md` for the checks performed on this repository. A portable dependency check and offline regression tests do not establish that a newly generated song loads or plays correctly in the game. This repository preparation does not install a song or modify the game. A compatible local game installation is required even for `--no-install`, because calibration, native encoding, and pack staging read it. No official chart-import API is claimed.
+A portable dependency check and offline regression tests do not establish that a newly generated song loads or plays correctly in the game. A compatible local game installation is required even for `--no-install`, because calibration, native encoding, and pack staging read it. No official chart-import API is claimed.

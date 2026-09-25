@@ -5,8 +5,9 @@ Source: https://github.com/anosu/AddressablesToolsPy
 Its license is included here. Optional Rust acceleration is not bundled.
 
 The portable application includes Python and packages identified by
-`build-receipt.json`. Their installed license files are retained under
-`third-party` and `runtime/Lib/site-packages` in the release; their licenses are separate from this
+`build-receipt.json`. The builder copies each installed package's license
+files with its metadata into `runtime/Lib/site-packages` in the release.
+Keep those files when repackaging; their licenses are separate from this
 project's MIT license.
 
 FFmpeg 7.1 is an independent executable supplied by imageio-ffmpeg, invoked

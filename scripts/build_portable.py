@@ -109,7 +109,7 @@ def main():
     shutil.copytree(ROOT / 'src', target / 'src', ignore=shutil.ignore_patterns('__pycache__', '*.egg-info'))
     (target / 'scripts').mkdir()
     shutil.copy2(ROOT / 'scripts' / 'run.py', target / 'scripts' / 'run.py')
-    for name in ('README.md', 'LICENSE', 'RESULT.md'):
+    for name in ('README.md', 'LICENSE'):
         shutil.copy2(ROOT / name, target / name)
     shutil.copytree(ROOT / 'third-party', target / 'third-party')
     compiler = Path(os.environ['WINDIR']) / 'Microsoft.NET' / 'Framework64' / 'v4.0.30319' / 'csc.exe'
